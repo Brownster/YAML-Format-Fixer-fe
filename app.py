@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_from_directory
+from flask import Flask, request, render_template, send_from_directory, after_this_request
 from werkzeug.utils import secure_filename, safe_join
 import os
 import difflib
@@ -8,16 +8,17 @@ app.config['UPLOAD_FOLDER'] = '/tmp/'
 
 def adjust_comment_indentation(lines):
     new_lines = []
-    for i, line in enumerate(lines):
-        stripped_line = line.lstrip()
-        if stripped_line.startswith("#"):
-            next_line_index = i + 1
-            while next_line_index < len(lines) and not lines[next_line_index].strip():
-                next_line_index += 1
-            if next_line_index < len(lines):
-                next_line_indentation = len(lines[next_line_index]) - len(lines[next_line_index].lstrip())
-                line = " " * next_line_indentation + stripped_line
-        new_lines.append(line)
+    # Use the last non-empty line's indentation as a reference for the next comments
+    last_indentation = 0
+    for line in lines:
+        if line.strip():  # If the line is not empty
+            last_indentation = len(line) - len(line.lstrip())
+            new_lines.append(line)
+        elif line.strip().startswith('#'):  # If the line is a comment
+            # Adjust the indentation to match the last non-empty line
+            new_lines.append(' ' * last_indentation + line.lstrip())
+        else:  # If the line is empty, just append it
+            new_lines.append(line)
     return new_lines
 
 def process_yaml_file(file_path):
@@ -74,11 +75,24 @@ def upload_file():
 
 @app.route('/downloads/<filename>')
 def download_file(filename):
-    file_path = safe_join(app.config['UPLOAD_FOLDER'], filename)
-    if os.path.exists(file_path):
-        return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-    else:
-        return 'File Not Found', 404
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    if not os.path.isfile(file_path):
+        return 'File Not Found', 404  # Moved inside the function to fix syntax error
+
+    @after_this_request
+    def cleanup(response):
+        try:
+            os.remove(file_path)
+            changes_filename = filename + '-changes.txt'
+            changes_filepath = os.path.join(app.config['UPLOAD_FOLDER'], changes_filename)
+            os.remove(changes_filepath)
+        except Exception as error:
+            app.logger.error("Error removing or closing downloaded file handles", error)
+        return response
+
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
