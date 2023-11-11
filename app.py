@@ -5,7 +5,7 @@ import difflib
 import gunicorn
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = '/tmp/'
 
 def adjust_comment_indentation(lines):
     new_lines = []  # Ensure new_lines is initialized
@@ -68,4 +68,5 @@ def download_file(filename):
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8000)  # Run the app on port 8000
+
