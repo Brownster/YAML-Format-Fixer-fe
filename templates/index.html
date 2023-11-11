@@ -59,9 +59,10 @@
 
 <body>
     <form method="post" enctype="multipart/form-data">
-        <h1>Upload YAML to fix formatting</h1>
-        <label for="file">YAML FILE:</label>
-        <input type="file" name="file" id="file">
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <h1>Upload YAML to Fix Formatting</h1>
+        <label for="file">YAML File:</label>
+        <input type="file" name="file" id="file" accept=".yaml, .yml, .eyaml" required>
         <input type="submit" value="Upload">
         <a href="https://github.com/Brownster/YAML-Format-Fixer-fe" target="_blank">View on GitHub</a>
     </form>
