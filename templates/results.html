@@ -69,12 +69,10 @@
         <h1>YAML Fixer Results</h1>
         <h2>Changes Made:</h2>
         <div class="changes">
-            <!-- The change log content will be dynamically inserted here -->
-            {{ change_log|safe }}
+            {{ change_log_html|safe }}
         </div>
         <a href="{{ url_for('download_file', filename=yaml_file) }}">Download Fixed YAML File</a>
         <a href="{{ url_for('download_file', filename=yaml_file + '-changes.txt') }}">Download Change Report</a>
     </div>
 </body>
 </html>
-

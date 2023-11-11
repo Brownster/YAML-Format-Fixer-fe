@@ -1,14 +1,13 @@
-from flask import Flask, request, render_template, send_from_directory
-from werkzeug.utils import secure_filename, safe_join
+from flask import Flask, request, render_template, send_from_directory, safe_join
+from werkzeug.utils import secure_filename
 import os
 import difflib
-import gunicorn
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = '/tmp/'
 
 def adjust_comment_indentation(lines):
-    new_lines = []  # Ensure new_lines is initialized
+    new_lines = []
     for i, line in enumerate(lines):
         stripped_line = line.lstrip()
         if stripped_line.startswith("#"):
@@ -19,7 +18,7 @@ def adjust_comment_indentation(lines):
                 next_line_indentation = len(lines[next_line_index]) - len(lines[next_line_index].lstrip())
                 line = " " * next_line_indentation + stripped_line
         new_lines.append(line)
-    return new_lines  # Return the new_lines list
+    return new_lines
 
 def process_yaml_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -41,6 +40,17 @@ def process_yaml_file(file_path):
     change_report = difflib.unified_diff(original_lines, modified_lines, fromfile=file_path, tofile=file_path, lineterm='\n')
     return ''.join(change_report)
 
+def process_diff_to_html(diff_output):
+    html_lines = []
+    for line in diff_output.split('\n'):
+        if line.startswith('+'):
+            html_lines.append(f'<div class="inserted">{line}</div>')
+        elif line.startswith('-'):
+            html_lines.append(f'<div class="deleted">{line}</div>')
+        else:
+            html_lines.append(f'<div class="context">{line}</div>')
+    return '\n'.join(html_lines)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -57,30 +67,19 @@ def upload_file():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Process the file and generate the change report
     change_log = process_yaml_file(filepath)
+    change_log_html = process_diff_to_html(change_log)
 
-    return render_template('results.html', change_log=change_log, yaml_file=filename)
-
-def process_diff_to_html(diff_output):
-    html_lines = []
-    for line in diff_output.split('\n'):
-        if line.startswith('+'):
-            html_lines.append(f'<div class="inserted">{line}</div>')
-        elif line.startswith('-'):
-            html_lines.append(f'<div class="deleted">{line}</div>')
-        else:
-            html_lines.append(f'<div class="context">{line}</div>')
-    return '\n'.join(html_lines)
-
+    return render_template('results.html', change_log_html=change_log_html, yaml_file=filename)
 
 @app.route('/downloads/<filename>')
 def download_file(filename):
-    change_log_html = process_diff_to_html(change_log)
-    return render_template('results.html', change_log_html=change_log_html, yaml_file=filename)
-
+    file_path = safe_join(app.config['UPLOAD_FOLDER'], filename)
+    if os.path.exists(file_path):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+    else:
+        return 'File Not Found', 404
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True, host='0.0.0.0', port=8000)  # Run the app on port 8000
-
+    app.run(debug=True, host='0.0.0.0', port=8000)
