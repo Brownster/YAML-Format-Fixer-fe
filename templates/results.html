@@ -35,6 +35,20 @@
             overflow-x: auto;
         }
 
+        .inserted {
+            color: green;
+            background-color: #ddffdd;
+        }
+
+        .deleted {
+            color: red;
+            background-color: #ffdddd;
+        }
+
+        .context {
+            color: #666;
+        }
+
         a {
             display: inline-block;
             background-color: #4CAF50;
@@ -55,6 +69,7 @@
         <h1>YAML Fixer Results</h1>
         <h2>Changes Made:</h2>
         <div class="changes">
+            <!-- The change log content will be dynamically inserted here -->
             {{ change_log|safe }}
         </div>
         <a href="{{ url_for('download_file', filename=yaml_file) }}">Download Fixed YAML File</a>
@@ -62,3 +77,4 @@
     </div>
 </body>
 </html>
+

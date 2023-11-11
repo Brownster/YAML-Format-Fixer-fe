@@ -62,9 +62,23 @@ def upload_file():
 
     return render_template('results.html', change_log=change_log, yaml_file=filename)
 
+def process_diff_to_html(diff_output):
+    html_lines = []
+    for line in diff_output.split('\n'):
+        if line.startswith('+'):
+            html_lines.append(f'<div class="inserted">{line}</div>')
+        elif line.startswith('-'):
+            html_lines.append(f'<div class="deleted">{line}</div>')
+        else:
+            html_lines.append(f'<div class="context">{line}</div>')
+    return '\n'.join(html_lines)
+
+
 @app.route('/downloads/<filename>')
 def download_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+    change_log_html = process_diff_to_html(change_log)
+    return render_template('results.html', change_log_html=change_log_html, yaml_file=filename)
+
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
