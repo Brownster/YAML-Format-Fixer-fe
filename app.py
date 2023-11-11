@@ -1,5 +1,5 @@
-from flask import Flask, request, render_template, send_from_directory, safe_join
-from werkzeug.utils import secure_filename
+from flask import Flask, request, render_template, send_from_directory
+from werkzeug.utils import secure_filename, safe_join
 import os
 import difflib
 
